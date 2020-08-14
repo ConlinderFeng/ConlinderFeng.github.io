@@ -1,0 +1,241 @@
+﻿<head>
+<meta name="viewport" content="width=device-width height=device-height initial-scale=1.0
+                               minimum-scale=1.0 maximum-scale=1.0 user-scalable=no"/>
+<title>Snake</title>
+<script>
+var food_name="food";
+var food_color="blue";
+var snake_name="snake";
+var snake_color="green";
+var button_name="button";
+var side_color="black";
+var side_length="200px";
+var block_length="10px";
+var cycle_time="80ms";
+function side_width(){
+	return (100*Number.parseFloat(side_length)/document.body.clientWidth)+"%";
+}
+function side_left(){
+	return (100-Number.parseFloat(side_width()))+"%";
+}
+function block_width(){
+	var area_width=document.body.clientWidth*(Number.parseFloat(side_left())/100);
+	return (100*Number.parseFloat(block_length)/area_width)+"%";
+}
+function block_height(){
+	var area_height=document.body.clientHeight;
+	return (100*Number.parseFloat(block_length)/area_height)+"%";
+}
+function x_max(){
+	return 100-Number.parseFloat(block_width())-Number.parseFloat(side_width());
+}
+function y_max(){
+	return 100-Number.parseFloat(block_height());
+}
+function dx_move(){
+	return (Number.parseFloat(block_width())/x_max());
+}
+function dy_move(){
+	return (Number.parseFloat(block_height())/y_max());
+}
+function adjust_pos(t_pos,id_length){
+	if(t_pos<0){
+		t_pos=t_pos-Math.floor(t_pos);
+	}else if(t_pos>1){
+		t_pos=t_pos-Math.floor(t_pos);
+	}else{
+		t_pos=t_pos;
+	}
+	t_pos=id_length*Math.round(t_pos/id_length);
+	return (t_pos<=1)?(t_pos):(0);
+}
+function pos(x_pos,y_pos){
+	return {x:adjust_pos(x_pos,dx_move()),y:adjust_pos(y_pos,dy_move())};
+}
+function get_key_pos(obj,next){
+	var k_x=(next.x<0)?(0):((next.x==0)?(1/2):(1));
+	var k_y=(next.y<0)?(0):((next.y==0)?(1/2):(1));
+	return pos(obj.x+k_x*Number.parseFloat(block_width()),
+		  obj.y+k_y*Number.parseFloat(block_height()));
+}
+function overlap_pos(a,b){
+	return (a.x==b.x)&&(a.y==b.y);
+}
+function random_pos(){
+	return pos(Math.random(),Math.random());
+}
+function get_pos(element){
+	return pos(Number.parseFloat(element.style.left)/x_max(),Number.parseFloat(element.style.top)/y_max());
+}
+function new_element(name,pos,color){
+	document.writeln(`<div name="${name}" 
+			style="display:inline;position:absolute;left:${pos.x*x_max()}%;width:${block_width()};
+						             top:${pos.y*y_max()}%;height:${block_height()};background:${color}"></div>`);
+}
+var high=0;
+var now=0;
+function update_board(){
+	var board=document.getElementById("board");
+	board.innerHTML=`HIGH ${high}<br>
+			NOW ${now}`;
+}
+var next;
+function move(){
+	var snake=document.getElementsByName(snake_name);
+	var food=document.getElementsByName(food_name);
+	for(var i=snake.length-1;i>0;i=i-1){
+		snake[i].style.left=snake[i-1].style.left;
+		snake[i].style.top=snake[i-1].style.top;
+	}
+	var tmp=get_pos(snake[0]);
+	tmp=pos(tmp.x+next.x,tmp.y+next.y);
+	snake[0].style.left=(tmp.x*x_max())+"%";
+	snake[0].style.top=(tmp.y*y_max())+"%";
+	for(var i=1;i<snake.length;i=i+1){
+		if(overlap_pos(get_pos(snake[i]),get_pos(snake[0]))==true){
+			var snake_length=snake.length;
+			for(var i=1;i<snake_length;i=i+1){
+				document.body.removeChild(snake[1]);
+			}
+			high=Math.max(high,now);
+			now=0;
+			update_board();
+		}else{
+			/*PASS*/
+		}
+	}
+	var last_pos=get_pos(snake[snake.length-1]);
+	for(var i=0;i<food.length;i=i+1){
+		if(overlap_pos(get_pos(food[i]),get_pos(snake[0]))==true){
+			tmp=random_pos();
+			food[i].style.left=(tmp.x*x_max())+"%";
+			food[i].style.top=(tmp.y*y_max())+"%";
+			last_pos=pos(last_pos.x-next.x,
+		      		      last_pos.y-next.y);
+			new_element(snake_name,last_pos,snake_color);
+			now=now+1;
+			update_board();
+		}else{
+			/*PASS*/
+		}
+	}
+}
+function up(){
+	next={x:0,y:-dy_move()};
+}
+function down(){
+	next={x:0,y:+dy_move()};
+}
+function left(){
+	next={x:-dx_move(),y:0};
+}
+function right(){
+	next={x:+dx_move(),y:0};
+}
+function end_base(elements){
+	var length=elements.length;
+	for(var i=0;i<length;i=i+1){
+		document.body.removeChild(elements[0]);
+	}
+}
+function end(msg){
+	var snake=document.getElementsByName(snake_name);
+	var food=document.getElementsByName(food_name);
+	var button=document.getElementsByName(button_name);
+	clearInterval(time_work);
+	/*end_base(snake);*/
+	end_base(food);
+	end_base(button);
+	document.writeln(`<h1>${msg}</h1>`);
+}
+function food_maker(food_length){
+	var food=document.getElementsByName(food_name);
+	food_length=food_length-food.length;
+	if(food_length>0){
+		for(var i=0;i<food_length;i=i+1){
+			new_element(food_name,random_pos(),food_color);
+		}
+	}else if(food_length<0){
+		for(var i=0;i>food_length;i=i-1){
+			document.body.removeChild(food[0]);
+		}
+	}else{
+		/*PASS*/
+	}
+}
+function resize_it(){
+	var button_length=Math.min(0.2,Number.parseFloat(side_width())*(0.9/2));
+	var left_list=[Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+(button_length/2),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+(button_length/2),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+button_length];
+	var top_list=[100-(3*button_length),
+		     100-button_length,
+		     100-(2*button_length),
+		     100-(2*button_length)];
+	var button=document.getElementsByName(button_name);
+	var line=document.getElementById("line");
+	var board=document.getElementById("board");
+	var control=document.getElementById("control");
+	var snake=document.getElementsByName(snake_name);
+	var food=document.getElementsByName(food_name);
+	for(var i=9;i<button.length;i=i+1){
+		button[i].style.left=`${left[i]}%`;
+		button[i].style.top=`${tpp[i]}%`;
+		button[i].style.width=`${button_length}%`;
+		button[i].style.height=`${button_length}%`;
+	}
+	line.style.left=`${Number.parseFloat(side_left())}%`;
+	line.style.width=`${Number.parseFloat(side_width())*0.1}%`;
+	board.style.left=`${Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)}%`;
+	board.style.width=`${Number.parseFloat(side_width())*0.9}%`;
+	board.style.height=`${(100-(3*button_length))/2}%`;
+	control.style.left=`${Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)}%`;
+	control.style.top=`${(100-(3*button_length))/2}%`;
+	control.style.width=`${Number.parseFloat(side_width())*0.9}%`;
+	control.style.height=`${(100-(3*button_length))/2}%`;
+	for(var i=0;i<snake.length;i=i+1){
+		snake[i].style.width=block_width();
+		snake[i].style.height=block_height();
+	}
+	for(var i=0;i<food.length;i=i+1){
+		food[i].style.width=block_width();
+		food[i].style.height=block_height();
+	}
+}
+function init(){
+	var func_list=["up","down","left","right"];
+	var tag_list=["↑","↓","←","→"];
+	var button_length=Math.min(20,Number.parseFloat(side_width())*(0.9/2));
+	var left_list=[Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+(button_length/2),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+(button_length/2),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1),
+		     Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)+button_length];
+	var top_list=[100-(3*button_length),
+		     100-button_length,
+		     100-(2*button_length),
+		     100-(2*button_length)];
+	for(var i=0;i<=3;i=i+1){
+		document.writeln(`<button name="${button_name}"
+			            style="display:inline;position:absolute;left:${left_list[i]}%;width:${button_length}%;top:${top_list[i]}%;height:${button_length}%;color:red"
+			            onclick="${func_list[i]}()">${tag_list[i]}</button>`);
+	}
+	document.writeln(`<div id="line"
+			style="display:inline;position:absolute;left:${Number.parseFloat(side_left())}%;top:0%;width:${Number.parseFloat(side_width())*0.1}%;height:100%;background:${side_color}"></div>`);
+	document.writeln(`<h3 id="board" style="display:inline;position:absolute;left:${Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)}%;top:0%;width:${Number.parseFloat(side_width())*0.9}%;height:${(100-(3*button_length))/2}%;user-select:none">
+			High 0<br>
+			Now 0
+			</h3>`);
+	document.writeln(`<h3 id="control" style="display:inline;position:absolute;left:${Number.parseFloat(side_left())+(Number.parseFloat(side_width())*0.1)}%;top:${(100-(3*button_length))/2}%;width:${Number.parseFloat(side_width())*0.9}%;height:${(100-(3*button_length))/2}%;user-select:none">
+			Drag to change the number of food:<br>
+ 			<input id="food_length" type="range" 
+			  min="1" max="100" step="1" value="1" oninput="food_maker(this.value)"/></h3>`);
+	new_element(snake_name,random_pos(),snake_color);
+	food_maker(document.getElementById("food_length").value);
+	next=pos(0,0);
+	time_work=setInterval(move,Number.parseFloat(cycle_time));
+}
+</script>
+</head>
+<body onload="init()" onresize="resize_it()">
+</body>
